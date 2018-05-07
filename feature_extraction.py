@@ -11,11 +11,11 @@ lines_dev = dev.readlines()
 lines_test = test.readlines()
 lines_train = train.readlines()
 
-config_file = "opensmile-2.3.0/config/gemaps/eGeMAPSv01a.conf"
+config_file = "opensmile-2.3.0/config/IS13_ComParE.conf"
 out_file = "out.csv"
 os.system("rm out*")
 """
-out_csv_file = "dev_features.csv"
+out_csv_file = "dev_features_IS13.csv"
 #>> to continue writing
 os.system("touch " + out_csv_file)
 for i in range(len(lines_dev)):
@@ -29,12 +29,12 @@ out_lines = out.readlines()
 for i in range(len(out_lines)):
 	if(out_lines[i] != "\n" and not "@" in out_lines[i]):
 		os.system("echo \'" + out_lines[i][10:-3] + "\' >> " + out_csv_file)
-
+"""
 
 
 out_file = "out.txt"
 os.system("rm out*")
-out_csv_file = "train_features.csv"
+out_csv_file = "train_features_IS13.csv"
 #>> to continue writing
 os.system("touch " + out_csv_file)
 for i in range(len(lines_train)):
@@ -49,11 +49,10 @@ for i in range(len(out_lines)):
 	if(out_lines[i] != "\n" and not "@" in out_lines[i]):
 		os.system("echo \'" + out_lines[i][10:-3] + "\' >> " + out_csv_file)
 
-"""
 
 out_file = "out.txt"
 os.system("rm out*")
-out_csv_file = "test_features.csv"
+out_csv_file = "test_features_IS13.csv"
 #>> to continue writing
 os.system("touch " + out_csv_file)
 for i in range(len(lines_test)):

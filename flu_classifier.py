@@ -5,7 +5,7 @@ import numpy as np
 
 # Keras Imports
 from keras.models import Sequential            
-from keras.layers import Dense, Activation, Embedding, BatchNormalization, Dropout, RNN, LSTM   # Layers
+from keras.layers import Dense, Activation, BatchNormalization, Dropout    # Layers
 from keras import optimizers                # Optimization Algorithm
 
 # Metrics Function
@@ -14,6 +14,9 @@ from sklearn.metrics import recall_score, precision_recall_fscore_support
 ####################################################################################################
 # The following lines define the random seeds
 # Using the same seeds allows the results to be reproducible at each run
+
+from sklearn.decomposition import PCA, KernelPCA
+
 
 import os
 import random as rn
@@ -33,6 +36,10 @@ K.set_session(sess)
 # Library to be used to plot the training history
 import matplotlib.pyplot as plt
 
+#MFCC 15 components are the best for linear pca
+#pca = PCA(n_components=15)
+pca = PCA(n_components=0.999999)
+#pca = KernelPCA(kernel="rbf", fit_inverse_transform=True, gamma=10)
 # CSV File Parsers
 def parse_data(file_name):
 
@@ -71,18 +78,39 @@ def build_model(input_shape, learning_rate=0.01):
     model = Sequential()                                
         
     # Fully Connected or Dense Layer receives as input the number of hidden units
-    #model.add(Dense(20, input_shape=(input_shape[1],))) 
-    #model.add(BatchNormalization()) 
+    model.add(Dense(50, input_shape=(input_shape[1],))) 
+    model.add(BatchNormalization()) 
+     
+     
 
     # The first layer in the model it needs to receive the input shape
     # For feature vectors the input shape can be defined as (number_of_features,)
     # The empty slot after number_of_features denotes that the size of the batch will be defined later    
-    model.add(LSTM(1, input_shape=(input_shape[1], input_shape[0]), activation='tanh'))    # Second Activation Layer
+    model.add(Activation('relu'))    # Second Activation Layer
 
+    model.add(Dense(25))            # Second Dense Layer
+    model.add(BatchNormalization()) 
+
+    model.add(Activation('relu')) 
+    model.add(Activation('relu'))    # Second Activation Layer
+    
+    model.add(Dense(5))            # Second Dense Layer
+    model.add(BatchNormalization()) 
+
+    model.add(Activation('relu'))    # Second Activation Layer
+    
+    # Output Layer
+    # This layer will have as many outputs/units as there are classes in the model
+    #model.add(Dropout(0.5))
+    model.add(Dense(1))
+    
+    # Output Activation Layer: Usually a Sigmoid like function, because it is bounded between 0 and 1
+    model.add(Activation('sigmoid'))
     
     # Optimizer and Parameters
     rmsprop = optimizers.RMSprop(learning_rate, rho=0.9, epsilon=None, decay=0)
-    
+    #rmsprop = optimizers.Nadam(lr=0.05, beta_1=0.9, beta_2=0.999, epsilon=None, schedule_decay=0.004)
+    #rmsprop = optimizers.SGD(lr=0.05, momentum=0.5, decay=0.0, nesterov=False)
     # The Optimization algorithms need parameters:
     # - learning rate (lr)
     # - weight decay  (wd)
@@ -99,7 +127,7 @@ def build_model(input_shape, learning_rate=0.01):
     return model
 
 # Function to train the model
-def train_model(train, dev, learning_rate=0.01, n_epochs=100, batch_size=500):
+def train_model(train, dev, learning_rate=0.01, n_epochs=10, batch_size=500):
     
     ###
     # Inputs:
@@ -119,8 +147,26 @@ def train_model(train, dev, learning_rate=0.01, n_epochs=100, batch_size=500):
     dev_data = dev[0]
     dev_labels = dev[1]
     
+    #PCA data reduction
+    print("Started fitting PCA")
+    pca.fit(data, y=labels)
+    
+    plt.figure()
+    cumulative = []
+    for i in range(len(pca.explained_variance_)):
+        cumulative += [pca.explained_variance_[i]]
+        
+    plt.plot(cumulative, 'o')
+    plt.ylabel('Percentage of cumulative explained variance ratio')
+    plt.xlabel('Number of components (ordered)')
+    plt.show()
+    
+    print("Started transforming according to PCA")
+    x_train = pca.transform(data)
+
     ## Train Model
-    model = build_model(data.shape, learning_rate)
+    print("Started building model")
+    model = build_model(x_train.shape, learning_rate)
     
     # To train the model we use model.fit()
     # This method receives as input:
@@ -129,10 +175,13 @@ def train_model(train, dev, learning_rate=0.01, n_epochs=100, batch_size=500):
     # - number of epochs
     # - batch size
     # It outputs the "history", which contains the evolution of the loss function and metrics after each epoch
-    print(len(data))
-    print(len(labels))
-    history = model.fit(data, labels, 
-                        validation_data=(dev_data, dev_labels),
+    
+    #perfor PCA
+    x_dev = pca.transform(dev_data)
+    print(len(dev_labels))
+    print(len(x_dev))
+    history = model.fit(x_train, labels, 
+                        validation_data=(x_dev, dev_labels),
                         epochs=n_epochs, 
                         batch_size=batch_size)
                 
@@ -149,17 +198,18 @@ def test_model(data, labels, trained_model):
     #
     # Outputs: Predicted Labels Loss, (Precision, Recall, F1 Score, Support), Predicted Labels
     ###
-    
+    x_test = pca.transform(data)
     # To obtain the loss over the test data we can use the method model.evaluate(test_data, test_labels)
-    loss = trained_model.evaluate(data, labels)
+    loss = trained_model.evaluate(x_test, labels)
     
     # To obtain predictions over the test data we can use model.predict(test_data)
-    predicted_labels = trained_model.predict(data)
-    
+    predicted_labels = trained_model.predict(x_test)
+
     # The predicted labels will be values between 0 and 1, as a result of the output activation function
     # If we want to compute metrics on the labels we need to round them to 0 and 1
     rounded_labels = np.clip(np.abs(np.round(predicted_labels)), 0, 1)
-    
+    #for i in range(len(rounded_labels)):
+        #print(rounded_labels[i])
     # This function outputs a set of metrics to evaluate classification results
     # It gets as inputs the labels, the predicted(now rounded) labels, the set of possible labels [0,1]
     # It can compute the metrics for each class individually, or average them, using average='macro'
@@ -191,15 +241,28 @@ def display_train_history(history):
 def main():
     
     # Set file tuples
-    train_files = ('train_features.csv', 'labels_train.txt')
-    dev_files = ('dev_features.csv', 'labels_dev.txt')
     
+    #gemaps
+    train_files = ('data_sets/train_features_gemaps_norm.csv', 'labels_train.txt')
+    dev_files = ('data_sets/dev_features_gemaps_norm.csv', 'labels_dev.txt')
+    
+    #egemaps
+    #train_files = ('data_sets/train_features_egemaps_norm.csv', 'labels_train.txt')
+    #dev_files = ('data_sets/dev_features_egemaps_norm.csv', 'labels_dev.txt')
+    
+    #mfcc
+    #train_files = ('data_sets/features_MFCC_train_norm.csv', 'labels_train.txt')
+    #dev_files = ('data_sets/features_MFCC_dev_norm.csv', 'labels_dev.txt')
+    
+    #IS13
+    #train_files = ('data_sets/train_features_IS13.csv', 'labels_train.txt')
+    #dev_files = ('data_sets/dev_features_IS13.csv', 'labels_dev.txt')
+
     ## Load Data using Parsers
     
     # Training Data
     train_data = parse_data(train_files[0])
     train_labels = parse_labels(train_files[1])
-    
     # Development Data
     dev_data = parse_data(dev_files[0])
     dev_labels = parse_labels(dev_files[1])
@@ -220,6 +283,7 @@ def main():
     print("Recall:", f1[1])
     print("F1 Score:", f1[2])
     print("Support:", f1[3])
+    
     # Display Training History
     display_train_history(history)
 
