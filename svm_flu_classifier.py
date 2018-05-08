@@ -3,7 +3,6 @@ import numpy as np
 from sklearn import svm,metrics
 from sklearn.decomposition import PCA, KernelPCA
 
-pca = PCA(n_components=0.90)
 # CSV File Parsers
 def parse_data(file_name):
 
@@ -47,16 +46,14 @@ def train_model(data,labels,C=1.0, kernel='rbf', degree=3, gamma='auto', coef0=0
                     max_iter=max_iter, 
                     decision_function_shape=decision_function_shape, 
                     random_state=random_state)
-    pca.fit(data)
-    x_data = pca.transform(data)
-    model.fit(x_data,labels)  
+    
+    model.fit(data,labels)  
                             
     return model
 
 # Function to test the model
 def test_model(data, labels, trained_model):
-    x_data = pca.transform(data)
-    predicted_labels = trained_model.predict(x_data)
+    predicted_labels = trained_model.predict(data)
     rounded_labels = np.clip(np.abs(np.round(predicted_labels)), 0, 1)
     f1 = metrics.precision_recall_fscore_support(labels,rounded_labels, labels=[0,1], average='macro')
 
@@ -70,12 +67,12 @@ def main():
     #dev_files = ('data_sets/dev_features_gemaps.csv', 'labels_dev.txt')
     
     #egemaps
-    #train_files = ('data_sets/train_features_egemaps_norm.csv', 'labels_train.txt')
-    #dev_files = ('data_sets/dev_features_egemaps_norm.csv', 'labels_dev.txt')
+    train_files = ('data_sets/train_features_egemaps.csv', 'labels_train.txt')
+    dev_files = ('data_sets/dev_features_egemaps.csv', 'labels_dev.txt')
     
     #mfcc
-    train_files = ('data_sets/features_MFCC_train.csv', 'labels_train.txt')
-    dev_files = ('data_sets/features_MFCC_dev.csv', 'labels_dev.txt')
+    #train_files = ('data_sets/features_MFCC_train.csv', 'labels_train.txt')
+    #dev_files = ('data_sets/features_MFCC_dev.csv', 'labels_dev.txt')
     
     #IS13
     #train_files = ('data_sets/train_features_IS13.csv', 'labels_train.txt')
@@ -95,7 +92,7 @@ def main():
     model = train_model(train_data, train_labels,
                         C=1.0, 
                         kernel='rbf', 
-                        degree=3, 
+                        degree=1, 
                         gamma='auto', 
                         coef0=0.0, 
                         shrinking=True, 
