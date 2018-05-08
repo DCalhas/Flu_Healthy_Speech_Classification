@@ -38,7 +38,7 @@ import matplotlib.pyplot as plt
 
 #MFCC 15 components are the best for linear pca
 #pca = PCA(n_components=15)
-pca = PCA(n_components=0.999999)
+pca = PCA(n_components=0.99999)#45 egemaps
 #pca = KernelPCA(kernel="rbf", fit_inverse_transform=True, gamma=10)
 # CSV File Parsers
 def parse_data(file_name):
@@ -150,7 +150,7 @@ def train_model(train, dev, learning_rate=0.01, n_epochs=10, batch_size=500):
     #PCA data reduction
     print("Started fitting PCA")
     pca.fit(data, y=labels)
-    
+    """
     plt.figure()
     cumulative = []
     for i in range(len(pca.explained_variance_)):
@@ -160,7 +160,7 @@ def train_model(train, dev, learning_rate=0.01, n_epochs=10, batch_size=500):
     plt.ylabel('Percentage of cumulative explained variance ratio')
     plt.xlabel('Number of components (ordered)')
     plt.show()
-    
+    """
     print("Started transforming according to PCA")
     x_train = pca.transform(data)
 
@@ -208,6 +208,17 @@ def test_model(data, labels, trained_model):
     # The predicted labels will be values between 0 and 1, as a result of the output activation function
     # If we want to compute metrics on the labels we need to round them to 0 and 1
     rounded_labels = np.clip(np.abs(np.round(predicted_labels)), 0, 1)
+    """
+    predicted_test_labels = trained_model.predict(pca.transform(test_data))
+    rounded_test_labels = np.clip(np.abs(np.round(predicted_test_labels)), 0, 1)
+
+    print("DEV LABELS")
+    for i in range(len(rounded_labels)):
+        print(rounded_labels[i])
+    print("TEST LABELS")
+    for i in range(len(rounded_test_labels)):
+        print(rounded_test_labels[i])
+    """
     #for i in range(len(rounded_labels)):
         #print(rounded_labels[i])
     # This function outputs a set of metrics to evaluate classification results
@@ -243,13 +254,13 @@ def main():
     # Set file tuples
     
     #gemaps
-    train_files = ('data_sets/train_features_gemaps_norm.csv', 'labels_train.txt')
-    dev_files = ('data_sets/dev_features_gemaps_norm.csv', 'labels_dev.txt')
+    #train_files = ('data_sets/train_features_gemaps_norm.csv', 'labels_train.txt')
+    #dev_files = ('data_sets/dev_features_gemaps_norm.csv', 'labels_dev.txt')
     
     #egemaps
-    #train_files = ('data_sets/train_features_egemaps_norm.csv', 'labels_train.txt')
-    #dev_files = ('data_sets/dev_features_egemaps_norm.csv', 'labels_dev.txt')
-    
+    train_files = ('data_sets/train_features_egemaps_norm.csv', 'labels_train.txt')
+    dev_files = ('data_sets/dev_features_egemaps_norm.csv', 'labels_dev.txt')
+    test_files = ('data_sets/dev_features_egemaps_norm.csv')
     #mfcc
     #train_files = ('data_sets/features_MFCC_train_norm.csv', 'labels_train.txt')
     #dev_files = ('data_sets/features_MFCC_dev_norm.csv', 'labels_dev.txt')
@@ -267,6 +278,7 @@ def main():
     dev_data = parse_data(dev_files[0])
     dev_labels = parse_labels(dev_files[1])
     
+    test_data = parse_data(test_files)
     # Set Training Parameters
     learning_rate = 0.0205
     epochs = 10
