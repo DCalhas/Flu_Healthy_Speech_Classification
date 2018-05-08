@@ -38,7 +38,7 @@ import matplotlib.pyplot as plt
 
 #MFCC 15 components are the best for linear pca
 #pca = PCA(n_components=15)
-pca = PCA(n_components=0.99999)#45 egemaps
+pca = PCA(n_components=0.999999)
 #pca = KernelPCA(kernel="rbf", fit_inverse_transform=True, gamma=10)
 # CSV File Parsers
 def parse_data(file_name):
@@ -150,7 +150,7 @@ def train_model(train, dev, learning_rate=0.01, n_epochs=10, batch_size=500):
     #PCA data reduction
     print("Started fitting PCA")
     pca.fit(data, y=labels)
-    """
+    
     plt.figure()
     cumulative = []
     for i in range(len(pca.explained_variance_)):
@@ -160,7 +160,7 @@ def train_model(train, dev, learning_rate=0.01, n_epochs=10, batch_size=500):
     plt.ylabel('Percentage of cumulative explained variance ratio')
     plt.xlabel('Number of components (ordered)')
     plt.show()
-    """
+    
     print("Started transforming according to PCA")
     x_train = pca.transform(data)
 
@@ -243,12 +243,12 @@ def main():
     # Set file tuples
     
     #gemaps
-    #train_files = ('data_sets/train_features_gemaps_norm.csv', 'labels_train.txt')
-    #dev_files = ('data_sets/dev_features_gemaps_norm.csv', 'labels_dev.txt')
+    train_files = ('data_sets/train_features_gemaps_norm.csv', 'labels_train.txt')
+    dev_files = ('data_sets/dev_features_gemaps_norm.csv', 'labels_dev.txt')
     
     #egemaps
-    train_files = ('data_sets/train_features_egemaps_norm.csv', 'labels_train.txt')
-    dev_files = ('data_sets/dev_features_egemaps_norm.csv', 'labels_dev.txt')
+    #train_files = ('data_sets/train_features_egemaps_norm.csv', 'labels_train.txt')
+    #dev_files = ('data_sets/dev_features_egemaps_norm.csv', 'labels_dev.txt')
     
     #mfcc
     #train_files = ('data_sets/features_MFCC_train_norm.csv', 'labels_train.txt')
